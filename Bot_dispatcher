@@ -1,0 +1,47 @@
+import telebot
+import requests
+import json
+import time
+
+
+TOKEN='Токен можно получить у BotFather'
+DATA = {"limit": "кол-во водителей в парке" , "offset": 0, "query": {"park": {"id": "получить вдиспетчерской во вкладке API"}}}
+URL = "https://fleet-api.taxi.yandex.net/v1/parks/driver-profiles/"
+HEADERS = {"X-Client-ID": "taxi/park/получить вдиспетчерской во вкладке API",
+            "X-API-Key": "получить вдиспетчерской во вкладке API",
+            "Author": "получить вдиспетчерской во вкладке API", "Accept": "application/json"
+tb = telebot.TeleBot(TOKEN)
+''' response = json.loads(response.text) в def response() это json
+который содерит информацию о всех водителях, машинах, балансах. 
+Можно извлечь и контролировать любую, так же бот может совершать
+простые действия например добавление водителя или авто.
+Задача данного бота отслеживать сумму балансов и ежеминутно 
+отправлять в телеграм. Бота можно было настроить на контроль
+конкретного водителя или авто.'''
+
+def response():
+    data = DATA
+    response = requests.post(URL,headers=HEADERS,json=data)
+    response = json.loads(response.text)
+    mx = int((response['total']))#содержит общее количество водителей
+    i = 0#нужно для цыкла
+    mi=0#сохраним тут отрицательные балансы водителей
+    a=[]#сохраним тут и положительные и отрицательные балансы
+    while i<mx:
+        a.append(float(response["driver_profiles"][i]['accounts'][0]['balance']))#добавляем все балансы водителей
+        i+=1
+    for i in a:# рассчитываем сумму отрицательных
+        if i<0:
+            mi=mi+i
+    a = str(round(sum(a)))
+    mi= str(round(sum(mi)))
+    t = time.strftime('%d.%m.%Y г. %H:%M:%S')
+    aa = ("на "+t+' всего '+a+" рублей у "+str(mx)+" водил. Минуса:"+mi+" сумма положительных: ",(round(float(a)-float(mi))))
+    return str(aa)
+
+while True:
+    response()
+    print(response())
+    tb.send_message('-1001713188806',response())
+    time.sleep(60)
+tb.infinity_polling()
